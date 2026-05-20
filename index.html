@@ -1,59 +1,497 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Pomodoro Timer</title>
-  <link rel="stylesheet" href="src/style.css" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pomodoro Timer</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --focus:#e05555;
+  --break:#22c98a;
+  --pause:#f0a500;
+  --cur:var(--focus);
+  --bg:#111;
+  --surface:#1c1c1c;
+  --border:#2e2e2e;
+  --text:#f5f5f5;
+  --muted:#666;
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Courier New',Courier,monospace;
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  padding:2rem 1rem 3rem;
+}
+
+.app{
+  width:100%;
+  max-width:440px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:1.8rem;
+}
+
+/* Header */
+.header{
+  width:100%;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.logo{
+  font-size:1rem;
+  font-weight:700;
+  letter-spacing:.2em;
+  color:var(--muted);
+  text-transform:uppercase;
+}
+.badge{
+  font-size:.7rem;
+  font-weight:700;
+  letter-spacing:.15em;
+  padding:.3rem .9rem;
+  border-radius:999px;
+  border:1.5px solid var(--cur);
+  color:var(--cur);
+  transition:color .3s,border-color .3s;
+}
+
+/* Ring */
+.ring-wrap{
+  position:relative;
+  width:min(70vw,270px);
+  height:min(70vw,270px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.ring-svg{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  transform:rotate(-90deg);
+}
+.ring-bg{fill:none;stroke:#2a2a2a;stroke-width:8}
+.ring-prog{
+  fill:none;
+  stroke:var(--cur);
+  stroke-width:8;
+  stroke-linecap:round;
+  stroke-dasharray:723;
+  stroke-dashoffset:0;
+  transition:stroke-dashoffset 1s linear,stroke .4s;
+}
+.ring-center{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:.25rem;
+}
+.time{
+  font-size:clamp(3rem,13vw,4.2rem);
+  font-weight:700;
+  letter-spacing:.04em;
+  font-variant-numeric:tabular-nums;
+  line-height:1;
+}
+.sublabel{
+  font-size:.6rem;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+
+/* Controls */
+.controls{
+  display:flex;
+  align-items:center;
+  gap:.9rem;
+}
+.btn{
+  border:none;
+  cursor:pointer;
+  font-family:'Courier New',monospace;
+  font-weight:700;
+  letter-spacing:.1em;
+  border-radius:10px;
+  transition:opacity .2s,transform .15s;
+}
+.btn:hover:not(:disabled){opacity:.8;transform:translateY(-2px)}
+.btn:active:not(:disabled){transform:translateY(0)}
+.btn:disabled{opacity:.25;cursor:not-allowed}
+.btn:focus-visible{outline:2px solid var(--cur);outline-offset:3px}
+
+.btn-main{
+  background:var(--cur);
+  color:#000;
+  font-size:.85rem;
+  padding:.8rem 2.2rem;
+  transition:background .4s,opacity .2s,transform .15s;
+}
+.btn-sm{
+  background:var(--surface);
+  color:var(--text);
+  font-size:1rem;
+  width:46px;height:46px;
+  border:1.5px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  border-radius:50%;
+}
+
+/* Settings */
+.settings{
+  width:100%;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:.9rem 1.5rem;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:2rem;
+}
+.sfield{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:.35rem;
+}
+.sfield label{
+  font-size:.6rem;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.sfield-row{display:flex;align-items:baseline;gap:.3rem}
+.sfield input{
+  width:50px;
+  background:transparent;
+  border:none;
+  border-bottom:1.5px solid var(--border);
+  color:var(--text);
+  font-family:'Courier New',monospace;
+  font-size:1.2rem;
+  font-weight:700;
+  text-align:center;
+  padding:.1rem 0;
+}
+.sfield input:focus{outline:none;border-bottom-color:var(--cur)}
+.sfield span{font-size:.7rem;color:var(--muted)}
+.sdiv{width:1px;height:32px;background:var(--border)}
+
+/* History */
+.history{
+  width:100%;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:1.1rem 1.3rem;
+}
+.hist-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:.9rem;
+}
+.hist-head h2{
+  font-size:.6rem;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.hist-count{
+  font-size:.78rem;
+  font-weight:700;
+  color:var(--cur);
+  background:color-mix(in srgb,var(--cur) 15%,transparent);
+  padding:.15rem .55rem;
+  border-radius:999px;
+  transition:color .4s,background .4s;
+}
+#hist-list{list-style:none;display:flex;flex-direction:column;gap:.45rem}
+#hist-list li{
+  font-size:.82rem;
+  padding:.55rem .8rem;
+  background:#ffffff06;
+  border-radius:8px;
+  border-left:2px solid var(--break);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  animation:fadein .3s ease;
+}
+@keyframes fadein{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.h-dur{font-weight:700}
+.h-time{color:var(--muted);font-size:.74rem}
+#hist-empty{font-size:.8rem;color:var(--muted);text-align:center;padding:.5rem 0}
+
+/* Flash */
+@keyframes flash{0%,100%{background:var(--bg)}30%{background:color-mix(in srgb,var(--cur) 18%,var(--bg))}}
+body.flash{animation:flash .7s ease}
+
+/* Pulse ring when running */
+@keyframes glow{0%,100%{filter:drop-shadow(0 0 4px var(--cur))}50%{filter:drop-shadow(0 0 14px var(--cur))}}
+.ring-prog.on{animation:glow 2s ease-in-out infinite}
+
+@media(max-width:380px){
+  .app{gap:1.3rem}
+  .settings{padding:.8rem 1rem;gap:1.2rem}
+  .btn-main{padding:.7rem 1.6rem}
+}
+</style>
 </head>
 <body>
+<div class="app">
 
-  <div class="app">
-
-    <h1 class="app-title">Pomodoro Timer</h1>
-
-    <!-- Mode Badge -->
-    <div id="mode-badge" class="mode-badge focus">FOCUS</div>
-
-    <!-- Timer Display -->
-    <div class="timer-ring-wrapper">
-      <svg class="ring" viewBox="0 0 200 200">
-        <circle class="ring-bg" cx="100" cy="100" r="88"/>
-        <circle id="ring-progress" class="ring-progress" cx="100" cy="100" r="88"/>
-      </svg>
-      <div id="timer-display" class="timer-display">25:00</div>
-    </div>
-
-    <!-- Controls -->
-    <div class="controls">
-      <button id="btn-start"  class="btn btn-primary">Start</button>
-      <button id="btn-pause"  class="btn btn-secondary" disabled>Pause</button>
-      <button id="btn-reset"  class="btn btn-ghost">Reset</button>
-    </div>
-
-    <!-- Settings -->
-    <div class="settings">
-      <label>
-        Focus (min)
-        <input id="focus-input" type="number" min="1" max="60" value="25" />
-      </label>
-      <label>
-        Break (min)
-        <input id="break-input" type="number" min="1" max="30" value="5" />
-      </label>
-    </div>
-
-    <!-- History -->
-    <section class="history">
-      <h2>Today's Sessions</h2>
-      <ul id="history-list">
-        <!-- filled by JS -->
-      </ul>
-      <p id="history-empty" class="history-empty">No sessions yet — start focusing!</p>
-    </section>
-
+  <div class="header">
+    <span class="logo">POMO</span>
+    <span id="badge" class="badge">● FOCUS</span>
   </div>
 
-  <script src="src/app.js"></script>
+  <div class="ring-wrap">
+    <svg class="ring-svg" viewBox="0 0 240 240">
+      <circle class="ring-bg" cx="120" cy="120" r="115"/>
+      <circle id="ring" class="ring-prog" cx="120" cy="120" r="115"/>
+    </svg>
+    <div class="ring-center">
+      <div id="time" class="time">25:00</div>
+      <div id="sublabel" class="sublabel">until break</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="btn-reset" class="btn btn-sm" aria-label="Reset">↺</button>
+    <button id="btn-start" class="btn btn-main" aria-label="Start timer">START</button>
+    <button id="btn-pause" class="btn btn-sm" aria-label="Pause" disabled>⏸</button>
+  </div>
+
+  <div class="settings">
+    <div class="sfield">
+      <label for="finput">Focus</label>
+      <div class="sfield-row">
+        <input id="finput" type="number" min="1" max="60" value="25" aria-label="Focus minutes"/>
+        <span>min</span>
+      </div>
+    </div>
+    <div class="sdiv"></div>
+    <div class="sfield">
+      <label for="binput">Break</label>
+      <div class="sfield-row">
+        <input id="binput" type="number" min="1" max="30" value="5" aria-label="Break minutes"/>
+        <span>min</span>
+      </div>
+    </div>
+  </div>
+
+  <section class="history" aria-label="Today's sessions">
+    <div class="hist-head">
+      <h2>Today's Sessions</h2>
+      <span id="hcount" class="hist-count">0</span>
+    </div>
+    <ul id="hist-list" aria-live="polite"></ul>
+    <p id="hist-empty">No sessions yet — start focusing!</p>
+  </section>
+
+</div>
+<script>
+// ── Elements ──
+const timeEl   = document.getElementById('time');
+const subEl    = document.getElementById('sublabel');
+const badge    = document.getElementById('badge');
+const ring     = document.getElementById('ring');
+const btnStart = document.getElementById('btn-start');
+const btnPause = document.getElementById('btn-pause');
+const btnReset = document.getElementById('btn-reset');
+const finput   = document.getElementById('finput');
+const binput   = document.getElementById('binput');
+const histList = document.getElementById('hist-list');
+const histEmpty= document.getElementById('hist-empty');
+const hcount   = document.getElementById('hcount');
+
+// ── Ring circumference: r=115 → 2π×115 ≈ 722.6 ──
+const CIRC = 2 * Math.PI * 115;
+ring.style.strokeDasharray = CIRC;
+
+// ── State ──
+let total=0, left=0, running=false, focus=true, tid=null;
+
+function focusSec(){ return (parseInt(finput.value)||25)*60 }
+function breakSec(){ return (parseInt(binput.value)||5)*60  }
+function pad(n){ return String(n).padStart(2,'0') }
+
+// ── Color ──
+const COLORS={focus:'#e05555',brk:'#22c98a',pause:'#f0a500'};
+function setColor(c){
+  document.documentElement.style.setProperty('--cur',c);
+}
+
+// ── Render time ──
+function renderTime(){
+  timeEl.textContent = pad(Math.floor(left/60))+':'+pad(left%60);
+}
+
+// ── Render ring ──
+function renderRing(){
+  const ratio = total>0 ? left/total : 1;
+  ring.style.strokeDashoffset = CIRC*(1-ratio);
+}
+
+// ── Render visuals ──
+function renderVisuals(){
+  const paused = !running && left<total && left>0;
+  if(paused){
+    badge.textContent='● PAUSED';
+    badge.style.color=COLORS.pause;
+    badge.style.borderColor=COLORS.pause;
+    setColor(COLORS.pause);
+    subEl.textContent='paused';
+    ring.classList.remove('on');
+  } else if(focus){
+    badge.textContent='● FOCUS';
+    badge.style.color=COLORS.focus;
+    badge.style.borderColor=COLORS.focus;
+    setColor(COLORS.focus);
+    subEl.textContent='until break';
+    if(running) ring.classList.add('on'); else ring.classList.remove('on');
+  } else {
+    badge.textContent='● BREAK';
+    badge.style.color=COLORS.brk;
+    badge.style.borderColor=COLORS.brk;
+    setColor(COLORS.brk);
+    subEl.textContent='until focus';
+    if(running) ring.classList.add('on'); else ring.classList.remove('on');
+  }
+  btnStart.disabled = running;
+  btnPause.disabled = !running;
+  const isPaused = !running && left<total && left>0;
+  btnStart.textContent = isPaused ? 'RESUME' : 'START';
+}
+
+// ── Init ──
+function init(){
+  total = focus ? focusSec() : breakSec();
+  left  = total;
+  renderTime();
+  renderRing();
+  renderVisuals();
+}
+
+// ── Tick ──
+function tick(){
+  if(left<=0){
+    clearInterval(tid); running=false;
+    ring.classList.remove('on');
+    playChime();
+    flashScreen();
+    if(focus) saveSession(parseInt(finput.value)||25);
+    focus=!focus;
+    init();
+    startTimer();
+    return;
+  }
+  left--;
+  renderTime();
+  renderRing();
+}
+
+// ── Controls ──
+function startTimer(){
+  if(running) return;
+  running=true;
+  tid=setInterval(tick,1000);
+  renderVisuals();
+}
+function pauseTimer(){
+  if(!running) return;
+  clearInterval(tid);
+  running=false;
+  renderVisuals();
+}
+function resetTimer(){
+  clearInterval(tid);
+  running=false; focus=true;
+  init();
+}
+
+// ── Sound ──
+function playChime(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    [[523,0],[659,.18],[784,.36],[1047,.54]].forEach(([f,t])=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type='sine'; o.frequency.value=f;
+      const s=ctx.currentTime+t;
+      g.gain.setValueAtTime(0,s);
+      g.gain.linearRampToValueAtTime(.22,s+.04);
+      g.gain.exponentialRampToValueAtTime(.001,s+.7);
+      o.start(s); o.stop(s+.75);
+    });
+  }catch(e){}
+}
+
+// ── Flash ──
+function flashScreen(){
+  document.body.classList.add('flash');
+  setTimeout(()=>document.body.classList.remove('flash'),700);
+}
+
+// ── History ──
+const KEY='pomo_hist_v1';
+function todayKey(){ return new Date().toISOString().slice(0,10) }
+function loadHist(){
+  try{
+    const r=localStorage.getItem(KEY);
+    if(!r) return [];
+    const d=JSON.parse(r);
+    if(d.date!==todayKey()) return [];
+    return d.sessions||[];
+  }catch{return[]}
+}
+function saveSession(mins){
+  const s=loadHist();
+  const t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  s.push({mins,time:t});
+  localStorage.setItem(KEY,JSON.stringify({date:todayKey(),sessions:s}));
+  renderHist();
+}
+function renderHist(){
+  const s=loadHist();
+  hcount.textContent=s.length;
+  histList.innerHTML='';
+  if(!s.length){ histEmpty.style.display='block'; return; }
+  histEmpty.style.display='none';
+  [...s].reverse().forEach(x=>{
+    const li=document.createElement('li');
+    li.innerHTML=`<span class="h-dur">✓ ${pad(x.mins)}:00 focus</span><span class="h-time">${x.time}</span>`;
+    histList.appendChild(li);
+  });
+}
+
+// ── Events ──
+btnStart.addEventListener('click',startTimer);
+btnPause.addEventListener('click',pauseTimer);
+btnReset.addEventListener('click',resetTimer);
+finput.addEventListener('change',()=>{ if(!running&&focus) init(); });
+binput.addEventListener('change',()=>{ if(!running&&!focus) init(); });
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT') return;
+  if(e.code==='Space'){e.preventDefault(); running?pauseTimer():startTimer();}
+  if(e.code==='KeyR') resetTimer();
+});
+
+// ── Boot ──
+init();
+renderHist();
+</script>
 </body>
 </html>
