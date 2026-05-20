@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pomodoro Timer</title>
+  <link rel="stylesheet" href="src/style.css" />
+</head>
+<body>
+
+  <div class="app">
+
+    <h1 class="app-title">Pomodoro Timer</h1>
+
+    <!-- Mode Badge -->
+    <div id="mode-badge" class="mode-badge focus">FOCUS</div>
+
+    <!-- Timer Display -->
+    <div class="timer-ring-wrapper">
+      <svg class="ring" viewBox="0 0 200 200">
+        <circle class="ring-bg" cx="100" cy="100" r="88"/>
+        <circle id="ring-progress" class="ring-progress" cx="100" cy="100" r="88"/>
+      </svg>
+      <div id="timer-display" class="timer-display">25:00</div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button id="btn-start"  class="btn btn-primary">Start</button>
+      <button id="btn-pause"  class="btn btn-secondary" disabled>Pause</button>
+      <button id="btn-reset"  class="btn btn-ghost">Reset</button>
+    </div>
+
+    <!-- Settings -->
+    <div class="settings">
+      <label>
+        Focus (min)
+        <input id="focus-input" type="number" min="1" max="60" value="25" />
+      </label>
+      <label>
+        Break (min)
+        <input id="break-input" type="number" min="1" max="30" value="5" />
+      </label>
+    </div>
+
+    <!-- History -->
+    <section class="history">
+      <h2>Today's Sessions</h2>
+      <ul id="history-list">
+        <!-- filled by JS -->
+      </ul>
+      <p id="history-empty" class="history-empty">No sessions yet — start focusing!</p>
+    </section>
+
+  </div>
+
+  <script src="src/app.js"></script>
+</body>
+</html>
